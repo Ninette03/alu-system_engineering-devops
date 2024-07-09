@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 #This script is creating an RSA keypair
 
-ssh-keygen -b 4096 -f /Users/irisa/.ssh/school -t rsa -N betty
+ssh-keygen -b 4096 -f ~/.ssh/school -t rsa -N betty
