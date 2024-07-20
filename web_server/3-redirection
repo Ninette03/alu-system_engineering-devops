@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
-# script that install nginx and configure it to redirect to another page when
-# accessing the /redirect_me page.
+# Script that configures a new Ubuntu machine with the following requirements:
 
-sudo apt-get -y update
+sudo apt-get update
 sudo apt-get -y install nginx
 sudo ufw allow 'Nginx HTTP'
+echo "Holberton School" | sudo tee /var/www/html/index.html > /dev/null
 
-echo "Holberton School" | sudo tee /var/www/html/index.nginx-debian.html
+string_for_replacement="server_name _;\n\trewrite ^\/redirect_me https:\/\/www.github.com\/Ninette03 permanent;"
+sudo sed -i "s/server_name _;/$string_for_replacement/" /etc/nginx/sites-enabled/default
 
-sudo sed -i '24i\       rewrite ^/redirect_me https://www.youtube.com/watch?v=QH2-TGUlwu4 permanent;' /etc/nginx/sites-available/default
 sudo service nginx restart
-echo -e "\nCompleted.\n"
