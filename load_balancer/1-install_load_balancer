@@ -1,16 +1,63 @@
 #!/usr/bin/env bash
-# Install the load balancer
+# install load balancer
 
-# Update software packages
-sudo apt-get -y update && sudo apt-get -y upgrade
 
-# Install haproxy
-sudo apt-get -y install haproxy
+echo -e "Updating and doing some minor checks...\n"
 
-# Setup a proxy
-sudo sed -i 's/ENABLED=0/ENABLED=1/' /etc/default/haproxy
-sudo cp /etc/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg.original
-sudo sed -i "$ a\listen 5639-lb-01\n\tbind *:80\n\tmode http\n\tbalance roundrobin\n\toption httpclose\n\toption forwardfor\n\tserver 5639-web-02 3.80.103.249 check\n\tserver 5639-web-01 54.167.62.184 check" /etc/haproxy/haproxy.cfg
+function install() {
+        command -v "$1" &> /dev/null
 
-# Start the proxy
-sudo service haproxy start
+        #shellcheck disable=SC2181
+        if [ $? -ne 0 ]; then
+                echo -e "       Installing: $1\n"
+                sudo apt-get update -y -qq && \
+                        sudo apt-get install -y "$1" -qq
+                echo -e "\n"
+        else
+                echo -e "       ${1} is already installed.\n"
+        fi
+}
+
+install haproxy #install haproxy
+
+echo -e "\nSetting up some minor stuff.\n"
+
+# backup default server config file
+sudo cp /etc/haproxy/haproxy.cfg haproxy_default.backup
+
+server_config=\
+"
+defaults
+  mode http
+  timeout client 15s
+  timeout connect 10s
+  timeout server 15s
+  timeout http-request 10s
+
+frontend ninette-tech-frontend
+    bind *:80
+    default_backend ninette-tech-backend
+
+backend ninette-tech-backend
+    balance roundrobin
+    server 6215-web-01 54.196.217.53:80 check
+    server 6215-web-02 52.204.174.223:80 check
+"
+
+# shellcheck disable=SC2154
+echo "$server_config" | sudo dd status=none of=/etc/haproxy/haproxy.cfg
+
+# enable haproxy to be started by init script
+echo "ENABLED=1" | sudo dd status=none of=/etc/default/haproxy
+
+echo "configured - Roundrobin On web-01 & web-02"
+
+if [ "$(pgrep -c haproxy)" -le 0 ]; then
+        sudo service haproxy start
+else
+        sudo service haproxy restart
+fi
+
+echo -e "web-01 web-02"
+echo "web-01"
+echo "web-02"
